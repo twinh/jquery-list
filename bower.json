@@ -1,0 +1,22 @@
+{
+  "name": "jquery-list",
+  "version": "0.9.0",
+  "description": "A jQuery Plugin for rendering list data",
+  "main": "jquery.list.js",
+  "keywords": [
+    "list",
+    "listview"
+  ],
+  "authors": [
+    "Twin Huang"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/twinh/jquery-list",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
