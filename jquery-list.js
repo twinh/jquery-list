@@ -16,7 +16,7 @@
         template: null,
         url: null,
         ajax: {},
-        localData: [],
+        localData: false,
         $loading: null,
         loadingMsg: '努力加载中...',
         $finished: null,
@@ -25,15 +25,27 @@
         $empty: null,
         emptyMsg: '暂无数据',
         page: 1,
+        filterExitingData: true,
+        filterKey: 'id',
+        filterData: {},
         beforeLoad: null,
         afterLoad: null,
+        afterRender: null,
 
         initialize: function () {
-            if (this.localData.length) {
-                this.render(this.localData);
-                this.scroll();
+            if (this.localData) {
+                if (this.localData.data.length) {
+                    this.render(this.localData.data);
+                    if (!this._isLastPage(this.localData)) {
+                        this.scroll();
+                    }
+                } else {
+                    this.showEmpty();
+                }
             } else {
-                this.showEmpty();
+                this.loadData(function () {
+
+                });
             }
         },
 
@@ -76,14 +88,14 @@
                     if (self._isLastPage(result)) {
                         self.showFinished();
                     }
-                    fn();
+                    fn && fn();
                     self.afterLoad && self.afterLoad(self, result);
                 }
             }, this.ajax));
         },
 
         _isLastPage: function (result) {
-            return (result.page-1) * result.rows + result.data.length == result.records;
+            return (result.page - 1) * result.rows + result.data.length == result.records;
         },
 
         showLoading: function () {
@@ -121,15 +133,39 @@
 
         // Render list item by specified data
         render: function (data) {
-            var html = '';
             for (var i in data) {
-                html += this.template(data[i]);
+                if (this.filterExitingData) {
+                    if (typeof this.filterData[data[i][this.filterKey]] != 'undefined') {
+                        continue;
+                    } else {
+                        this.filterData[data[i][this.filterKey]] = true;
+                    }
+                }
+                var $item = $($.trim(this.template(data[i])));
+                $item.data('list-data', data[i]);
+                this.$el.append($item);
+                this.afterRender && this.afterRender($item);
             }
-            this.$el.append(html);
+        },
+
+        destroy: function () {
+            this.$el.html('');
+            this.$el.removeData('list');
+            this.$empty && this.$empty.remove();
+            this.$loading && this.$loading.remove();
+        },
+
+        filter: function (params) {
+            this.$el.html('');
+            this.page = 0;
+            this.url = $.appendUrl(this.url, params);
+            this.loadData(function () {
+            });
         }
     });
 
     $.fn.list = function (option) {
+        var pluginArgs = arguments;
         return this.each(function () {
             var $this = $(this);
             var data = $this.data('list');
@@ -141,9 +177,18 @@
             } else {
                 $.extend(data, options);
             }
-            if (typeof option == 'string') data[option]();
+
+            if (typeof option == 'string') {
+                var args = [];
+                for (var i in pluginArgs) {
+                    if (i != 0) {
+                        args.push(pluginArgs[i]);
+                    }
+                }
+                data[option].apply(data, args);
+            }
         });
     };
     $.fn.list.Constructor = List;
-} ($));
+}($));
 
